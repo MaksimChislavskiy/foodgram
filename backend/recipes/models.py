@@ -12,7 +12,7 @@ User = get_user_model()
 class Recipe(models.Model):
     """Модель Рецепт."""
 
-    name = models.CharField('Название', max_length=200)
+    name = models.CharField(max_length=200, verbose_name='Название')
     author = models.ForeignKey(
         User,
         related_name='recipes',
@@ -20,14 +20,14 @@ class Recipe(models.Model):
         null=True,
         verbose_name='Автор',
     )
-    text = models.TextField('Описание')
+    text = models.TextField(verbose_name='Описание')
     image = models.ImageField(
-        'Изображение',
-        upload_to='recipes/'
+        upload_to='recipes/',
+        verbose_name='Изображение'
     )
     cooking_time = models.PositiveSmallIntegerField(
-        'Время приготовления',
-        validators=[MinValueValidator(1, message='Минимальное значение 1!')]
+        validators=[MinValueValidator(1, message='Минимальное значение 1!')],
+        verbose_name='Время приготовления'
     )
     ingredients = models.ManyToManyField(
         Ingredient,
@@ -62,11 +62,12 @@ class IngredientInRecipe(models.Model):
     ingredient = models.ForeignKey(
         Ingredient,
         on_delete=models.CASCADE,
+        related_name='ingredient_list',
         verbose_name='Ингредиент',
     )
     amount = models.PositiveSmallIntegerField(
-        'Количество',
-        validators=[MinValueValidator(1, message='Минимальное количество 1!')]
+        validators=[MinValueValidator(1, message='Минимальное количество 1!')],
+        verbose_name='Количество'
     )
 
     class Meta:

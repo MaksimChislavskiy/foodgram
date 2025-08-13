@@ -5,19 +5,8 @@ from django.db import models
 class Tag(models.Model):
     """Модель Тэг."""
 
-    name = models.CharField('Название', unique=True, max_length=200)
-    color = models.CharField(
-        'Цветовой HEX-код',
-        unique=True,
-        max_length=7,
-        validators=[
-            RegexValidator(
-                regex='^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$',
-                message='Введенное значение не является цветом в формате HEX!'
-            )
-        ]
-    )
-    slug = models.SlugField('Уникальный слаг', unique=True, max_length=200)
+    name = models.CharField(unique=True, max_length=200, verbose_name='Название')
+    slug = models.SlugField(unique=True, max_length=200, verbose_name='Уникальный слаг')
 
     class Meta:
         verbose_name = 'Тег'

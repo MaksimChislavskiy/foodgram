@@ -5,14 +5,14 @@ from django.db.models import UniqueConstraint
 
 class User(AbstractUser):
     first_name = models.CharField(
-        'имя',
         max_length=150,
         blank=False,
+        verbose_name='имя'
     )
     last_name = models.CharField(
-        'фамилия',
         max_length=150,
-        blank=False
+        blank=False,
+        verbose_name='фамилия'
     )
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = [
@@ -21,14 +21,14 @@ class User(AbstractUser):
         'last_name',
     ]
     email = models.EmailField(
-        'email address',
         max_length=254,
         unique=True,
+        verbose_name='email address'
     )
     avatar = models.ImageField(
-        'аватар',
         upload_to='users/avatars/',
         blank=True,
+        verbose_name='аватар'
     )
 
     class Meta:

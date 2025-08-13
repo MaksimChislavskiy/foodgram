@@ -4,8 +4,15 @@ from django.db import models
 class Ingredient(models.Model):
     """Модель Ингридиент."""
 
-    name = models.CharField('Название', max_length=200, db_index=True)
-    measurement_unit = models.CharField('Единица измерения', max_length=200)
+    name = models.CharField(
+        max_length=200,
+        db_index=True,
+        verbose_name='Название'
+        )
+    measurement_unit = models.CharField(
+         max_length=200,
+         verbose_name='Единица измерения'
+         )
 
     class Meta:
         verbose_name = 'Ингредиент'
