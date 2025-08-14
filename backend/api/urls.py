@@ -1,13 +1,10 @@
-# foodgram/backend/api/urls.py
 from django.urls import include, path
-
 from rest_framework import routers
 
-
-from recipes.views import RecipeViewSet
-from users.views import CustomUserViewSet
-from tags.views import TagViewSet
 from ingredients.views import IngredientViewSet
+from recipes.views import RecipeViewSet
+from tags.views import TagViewSet
+from users.views import CustomUserViewSet
 
 router = routers.DefaultRouter()
 

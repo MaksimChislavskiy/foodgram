@@ -3,17 +3,14 @@ from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
 from rest_framework import status
 from rest_framework.decorators import action
-from rest_framework.parsers import MultiPartParser
-from rest_framework.permissions import IsAuthenticated, AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from api.pagination import CustomPagination
+
 from .models import Subscribe
-from .serializers import (
-    CustomUserSerializer,
-    SubscribeSerializer,
-    AvatarUpdateSerializer
-)
+from .serializers import (AvatarUpdateSerializer, CustomUserSerializer,
+                          SubscribeSerializer)
 
 User = get_user_model()
 
@@ -41,40 +38,35 @@ class CustomUserViewSet(UserViewSet):
 
     @action(
         detail=False,
-        methods=['put', 'patch', 'delete'],  # Добавляем 'delete'
+        methods=['put', 'patch', 'delete'],
         permission_classes=[IsAuthenticated],
-        url_path='me/avatar',
-        parser_classes=[MultiPartParser]
+        url_path='me/avatar'
     )
     def update_avatar(self, request):
         user = request.user
-
+        serializer = AvatarUpdateSerializer(user,
+                                            data=request.data,
+                                            partial=True)
         if request.method in ['PUT', 'PATCH']:
             if 'avatar' not in request.data:
                 return Response(
-                    {'error': 'No avatar file provided'},
+                    {'error': 'No avatar data provided'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
-
-            if user.avatar:  # Удаляем старый аватар, если он есть
+            if user.avatar:
                 user.avatar.delete()
-
-            user.avatar = request.data['avatar']
-            user.save()
-            serializer = AvatarUpdateSerializer(user)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
-
         elif request.method == 'DELETE':
-            if not user.avatar:  # Если аватара нет, возвращаем 404
+            if not user.avatar:
                 return Response(
                     {'error': 'Avatar does not exist'},
                     status=status.HTTP_404_NOT_FOUND
                 )
-
-            user.avatar.delete()  # Удаляем файл аватара
-            user.avatar = None    # Очищаем поле в БД
+            user.avatar.delete()
+            user.avatar = None
             user.save()
-            # Успешный ответ без тела
             return Response(status=status.HTTP_204_NO_CONTENT)
 
     @action(
@@ -86,21 +78,33 @@ class CustomUserViewSet(UserViewSet):
         user = request.user
         author_id = self.kwargs.get('id')
         author = get_object_or_404(User, id=author_id)
-
         if request.method == 'POST':
-            serializer = SubscribeSerializer(author,
-                                             data=request.data,
-                                             context={"request": request})
-            serializer.is_valid(raise_exception=True)
+            if Subscribe.objects.filter(user=user, author=author).exists():
+                return Response(
+                    {'error': 'Вы уже подписаны на этого пользователя!'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            if user == author:
+                return Response(
+                    {'error': 'Вы не можете подписаться на самого себя!'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
             Subscribe.objects.create(user=user, author=author)
+            serializer = SubscribeSerializer(
+                author,
+                context={'request': request}
+            )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
-
         if request.method == 'DELETE':
-            subscription = get_object_or_404(Subscribe,
-                                             user=user,
-                                             author=author)
-            subscription.delete()
-            return Response(status=status.HTTP_204_NO_CONTENT)
+            try:
+                subscription = Subscribe.objects.get(user=user, author=author)
+                subscription.delete()
+                return Response(status=status.HTTP_204_NO_CONTENT)
+            except Subscribe.DoesNotExist:
+                return Response(
+                    {'errors': 'Подписка не существует!'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
     @action(
         detail=False,

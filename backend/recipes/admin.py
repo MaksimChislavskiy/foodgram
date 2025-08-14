@@ -23,7 +23,7 @@ class RecipeAdmin(admin.ModelAdmin):
             _favorites_count=Count('favorites', distinct=True)
         ).select_related('author').prefetch_related(
             'tags',
-            'ingredients_in_recipe__ingredient'
+            'ingredient_list__ingredient'
         )
 
     @admin.display(description='В избранном', ordering='_favorites_count')
@@ -37,7 +37,7 @@ class RecipeAdmin(admin.ModelAdmin):
                 '<br>'.join([
                     f'{ri.ingredient.name} - '
                     f'{ri.amount} {ri.ingredient.measurement_unit}'
-                    for ri in recipe.ingredients_in_recipe.select_related(
+                    for ri in recipe.ingredient_list.select_related(
                         'ingredient').all()
                 ]))
         except (AttributeError, ObjectDoesNotExist):
@@ -46,7 +46,9 @@ class RecipeAdmin(admin.ModelAdmin):
     @admin.display(description='Теги')
     def tags_list(self, recipe):
         try:
-            return mark_safe('<br>'.join([tag.name for tag in recipe.tags.all()]))
+            return mark_safe(
+                '<br>'.join([tag.name for tag in recipe.tags.all()])
+            )
         except (AttributeError, ObjectDoesNotExist):
             return "Нет тегов"
 

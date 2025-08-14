@@ -1,8 +1,10 @@
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
-from rest_framework import status
+from drf_extra_fields.fields import Base64ImageField
+from rest_framework import serializers, status
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import SerializerMethodField
+
 from .models import Subscribe
 
 User = get_user_model()
@@ -20,6 +22,7 @@ class CustomUserCreateSerializer(UserCreateSerializer):
 
 class CustomUserSerializer(UserSerializer):
     is_subscribed = SerializerMethodField(read_only=True)
+    avatar = Base64ImageField(required=False, allow_null=True)
 
     class Meta:
         model = User
@@ -48,7 +51,13 @@ class SubscribeSerializer(CustomUserSerializer):
         fields = CustomUserSerializer.Meta.fields + (
             'recipes_count', 'recipes'
         )
-        read_only_fields = ('email', 'username')
+        read_only_fields = (
+            'email',
+            'username',
+            'first_name',
+            'last_name',
+            'avatar'
+        )
 
     def validate(self, data):
         author = self.instance
@@ -68,8 +77,15 @@ class SubscribeSerializer(CustomUserSerializer):
     def get_recipes_count(self, obj):
         return obj.recipes.count()
 
+    def get_recipes(self, obj):
+        from recipes.serializers import RecipeShortSerializer
+        recipes = obj.recipes.all()[:3]
+        return RecipeShortSerializer(recipes, many=True).data
 
-class AvatarUpdateSerializer(UserSerializer):
+
+class AvatarUpdateSerializer(serializers.ModelSerializer):
+    avatar = Base64ImageField(required=False, allow_null=True)
+
     class Meta:
         model = User
         fields = ('avatar',)

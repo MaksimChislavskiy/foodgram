@@ -1,17 +1,17 @@
 from django.db import transaction
 from django.db.models import F
-from django.shortcuts import get_object_or_404
+from drf_extra_fields.fields import Base64ImageField
 from rest_framework.exceptions import ValidationError
-from rest_framework.fields import SerializerMethodField, IntegerField
+from rest_framework.fields import IntegerField, SerializerMethodField
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
-from drf_extra_fields.fields import Base64ImageField
 
 from ingredients.models import Ingredient
 from tags.models import Tag
 from tags.serializers import TagSerializer
 from users.serializers import CustomUserSerializer
-from .models import Recipe, IngredientInRecipe
+
+from .models import IngredientInRecipe, Recipe
 
 
 class RecipeReadSerializer(ModelSerializer):
@@ -43,10 +43,10 @@ class RecipeReadSerializer(ModelSerializer):
             'id',
             'name',
             'measurement_unit',
-            amount=F('ingredientinrecipe__amount')
+            amount=F('ingredient_list__amount')
         )
         return ingredients
-    
+
     def get_is_favorited(self, obj):
         user = self.context.get('request').user
         if user.is_anonymous:
@@ -73,7 +73,7 @@ class RecipeWriteSerializer(ModelSerializer):
                                   many=True)
     author = CustomUserSerializer(read_only=True)
     ingredients = IngredientInRecipeWriteSerializer(many=True)
-    image = Base64ImageField()
+    image = Base64ImageField(required=True)
 
     class Meta:
         model = Recipe
@@ -96,10 +96,16 @@ class RecipeWriteSerializer(ModelSerializer):
             })
         ingredients_list = []
         for item in ingredients:
-            ingredient = get_object_or_404(Ingredient, id=item['id'])
+            try:
+                ingredient = Ingredient.objects.get(id=item['id'])
+            except Ingredient.DoesNotExist:
+                raise ValidationError({
+                    'ingredients': f'Ингредиент с id {item["id"]}'
+                    f' не существует!'
+                })
             if ingredient in ingredients_list:
                 raise ValidationError({
-                    'ingredients': 'Ингридиенты не могут повторяться!'
+                    'ingredients': 'Ингредиенты не могут повторяться!'
                 })
             if int(item['amount']) <= 0:
                 raise ValidationError({
@@ -119,6 +125,25 @@ class RecipeWriteSerializer(ModelSerializer):
                     {'tags': 'Теги должны быть уникальными!'})
             tags_list.append(tag)
         return value
+
+    def validate(self, data):
+        request_method = self.context['request'].method
+
+        if request_method in ('POST', 'PATCH'):
+            if 'ingredients' not in data:
+                raise ValidationError(
+                    {'ingredients': 'Это поле обязательно.'})
+            if 'tags' not in data:
+                raise ValidationError(
+                    {'tags': 'Это поле обязательно.'})
+            if 'image' not in data:
+                raise ValidationError(
+                    {'image': 'Это поле обязательно.'})
+            if data['image'] is None or data['image'] == '':
+                raise ValidationError(
+                    {'image': 'Изображение не может быть пустым.'})
+
+        return data
 
     @transaction.atomic
     def create_ingredients_amounts(self, ingredients, recipe):
