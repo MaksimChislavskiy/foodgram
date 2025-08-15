@@ -1,3 +1,5 @@
+from api.pagination import CustomPagination
+from api.permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
 from django.db.models import F, Sum
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
@@ -8,13 +10,13 @@ from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ModelViewSet
 
-from api.pagination import CustomPagination
-from api.permissions import IsAdminOrReadOnly, IsAuthorOrReadOnly
-
 from .filters import RecipeFilter
 from .models import Favourite, IngredientInRecipe, Recipe, ShoppingCart
-from .serializers import (RecipeReadSerializer, RecipeShortSerializer,
-                          RecipeWriteSerializer)
+from .serializers import (
+    RecipeReadSerializer,
+    RecipeShortSerializer,
+    RecipeWriteSerializer,
+)
 
 
 class RecipeViewSet(ModelViewSet):

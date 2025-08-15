@@ -1,12 +1,11 @@
 from django.db import transaction
 from django.db.models import F
 from drf_extra_fields.fields import Base64ImageField
+from ingredients.models import Ingredient
 from rest_framework.exceptions import ValidationError
 from rest_framework.fields import IntegerField, SerializerMethodField
 from rest_framework.relations import PrimaryKeyRelatedField
 from rest_framework.serializers import ModelSerializer
-
-from ingredients.models import Ingredient
 from tags.models import Tag
 from tags.serializers import TagSerializer
 from users.serializers import CustomUserSerializer

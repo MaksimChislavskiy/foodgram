@@ -2,9 +2,9 @@ from django.contrib.auth import get_user_model
 from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
-
 from ingredients.models import Ingredient
 from tags.models import Tag
+
 
 User = get_user_model()
 
