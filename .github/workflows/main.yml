@@ -193,15 +193,24 @@ jobs:
         # с которым установлено соединение
         script: |
           cd foodgram
-          # Выполняет pull образов с Docker Hub
-          sudo docker compose -f docker-compose.production.yml pull
-          # Перезапускает все контейнеры в Docker Compose
-          sudo docker compose -f docker-compose.production.yml down
+          # 1. Добавляем очистку volumes при down (решает проблему с остаточной data)
+          sudo docker compose -f docker-compose.production.yml down -v
+          
+          # 2. Сначала запускаем ТОЛЬКО БД и ждём её готовности
+          sudo docker compose -f docker-compose.production.yml up -d db
+          while ! sudo docker compose -f docker-compose.production.yml exec db pg_isready -U $POSTGRES_USER; do
+            echo "Ждём запуска PostgreSQL..."; sleep 5
+          done
+
+          # 3. Теперь запускаем остальные сервисы
           sudo docker compose -f docker-compose.production.yml up -d
-          # Выполняет миграции и сбор статики
+          
+          # 4. Добавляем --no-input для автоматического сбора статики
           sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-          sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic
-          sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/collected_static/. /backend_static/static/
+          sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --no-input --clear
+          
+          # 5. Исправляем пути копирования статики (у вас backend_static, у коллег staticfiles)
+          sudo docker compose -f docker-compose.production.yml exec backend sh -c "mkdir -p /staticfiles && cp -r /app/backend_static/. /staticfiles/"
 
   send_message:
     runs-on: ubuntu-latest
